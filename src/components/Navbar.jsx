@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../state/AuthContext.jsx";
+import logoSvg from "../../logo.svg";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -20,7 +21,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="nav-container">
         <Link to="/" className="logo" onClick={handleClose}>
-          <img src="/logo.svg" alt="LearnEdge Logo" className="logo-img" />
+          <img src={logoSvg} alt="LearnEdge Logo" className="logo-img" />
           <span>LearnEdge</span>
         </Link>
         <ul className={`nav-menu ${menuOpen ? "active" : ""}`}>
