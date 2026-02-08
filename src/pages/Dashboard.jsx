@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar.jsx";
 import CourseCard from "../components/CourseCard.jsx";
 import { useCourses } from "../state/CourseContext.jsx";
 import { useAuth } from "../state/AuthContext.jsx";
+import { uploadAvatarAPI } from "../services/api.js";
 
 export default function Dashboard() {
   const { enrolledCourses } = useCourses();
@@ -11,17 +12,77 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [profilePicture, setProfilePicture] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState(localStorage.getItem("userAvatarUrl") || null);
 
-  const handleProfilePictureChange = (e) => {
+  const handleProfilePictureChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setUploadError("File size must be less than 5MB");
+      setTimeout(() => setUploadError(""), 5000);
+      return;
+    }
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      setUploadError("Only JPG, PNG, and GIF files are allowed");
+      setTimeout(() => setUploadError(""), 5000);
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+    setUploadSuccess("");
+
+    try {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture(reader.result);
-        // TODO: Upload to S3 when backend is ready
-        localStorage.setItem("userProfilePicture", reader.result);
+      reader.onloadend = async () => {
+        const base64Data = reader.result; // This is the data URL (with prefix)
+        
+        // Get userId and token from localStorage
+        const userId = user?.id || localStorage.getItem("userId");
+        const token = localStorage.getItem("accessToken");
+
+        if (!userId || !token) {
+          setUploadError("User not authenticated. Please login again.");
+          setUploading(false);
+          return;
+        }
+
+        try {
+          // Call the S3 upload API
+          const response = await uploadAvatarAPI(userId, base64Data, file.name, token);
+          
+          // Store the avatar URL in localStorage and state
+          if (response.avatarUrl) {
+            setAvatarUrl(response.avatarUrl);
+            localStorage.setItem("userAvatarUrl", response.avatarUrl);
+            setProfilePicture(base64Data);
+            setUploadSuccess("Avatar uploaded successfully!");
+            
+            // Clear success message after 3 seconds
+            setTimeout(() => setUploadSuccess(""), 3000);
+          }
+        } catch (error) {
+          console.error("Upload error:", error);
+          setUploadError(error.message || "Failed to upload avatar. Please try again.");
+          setTimeout(() => setUploadError(""), 5000);
+        } finally {
+          setUploading(false);
+        }
       };
       reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("File read error:", error);
+      setUploadError("Error reading file. Please try again.");
+      setUploading(false);
+      setTimeout(() => setUploadError(""), 5000);
     }
   };
 
@@ -31,7 +92,7 @@ export default function Dashboard() {
   };
 
   const storedProfilePicture = localStorage.getItem("userProfilePicture");
-  const displayProfilePicture = profilePicture || storedProfilePicture;
+  const displayProfilePicture = profilePicture || avatarUrl || storedProfilePicture;
 
   return (
     <>
@@ -87,9 +148,10 @@ export default function Dashboard() {
                     backgroundColor: "#ff9800",
                     color: "white",
                     borderRadius: "4px",
-                    cursor: "pointer",
+                    cursor: uploading ? "not-allowed" : "pointer",
                     marginBottom: "15px",
-                    fontWeight: "bold"
+                    fontWeight: "bold",
+                    opacity: uploading ? 0.6 : 1
                   }}>
                     {uploading ? "Uploading..." : "Upload Picture"}
                     <input 
@@ -100,6 +162,37 @@ export default function Dashboard() {
                       disabled={uploading}
                     />
                   </label>
+                  
+                  {/* Error Message */}
+                  {uploadError && (
+                    <div style={{
+                      padding: "10px 15px",
+                      backgroundColor: "#f8d7da",
+                      color: "#721c24",
+                      borderRadius: "4px",
+                      marginBottom: "15px",
+                      fontSize: "14px",
+                      border: "1px solid #f5c6cb"
+                    }}>
+                      {uploadError}
+                    </div>
+                  )}
+
+                  {/* Success Message */}
+                  {uploadSuccess && (
+                    <div style={{
+                      padding: "10px 15px",
+                      backgroundColor: "#d4edda",
+                      color: "#155724",
+                      borderRadius: "4px",
+                      marginBottom: "15px",
+                      fontSize: "14px",
+                      border: "1px solid #c3e6cb"
+                    }}>
+                      {uploadSuccess}
+                    </div>
+                  )}
+
                   <p style={{ fontSize: "12px", color: "#666", marginTop: "10px" }}>
                     Max 5MB. Formats: JPG, PNG, GIF
                   </p>
