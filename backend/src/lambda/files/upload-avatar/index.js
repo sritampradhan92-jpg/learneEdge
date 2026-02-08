@@ -36,8 +36,7 @@ exports.handler = async (event) => {
             Bucket: process.env.S3_BUCKET,
             Key: key,
             Body: buffer,
-            ContentType: 'image/jpeg',
-            ACL: 'public-read'
+            ContentType: 'image/jpeg'
         });
 
         await s3Client.send(uploadCommand);

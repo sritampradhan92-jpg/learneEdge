@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar.jsx";
 import CourseCard from "../components/CourseCard.jsx";
@@ -14,7 +14,20 @@ export default function Dashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState(localStorage.getItem("userAvatarUrl") || null);
+  const [avatarUrl, setAvatarUrl] = useState(
+    localStorage.getItem("userAvatarUrl") || user?.avatar || null
+  );
+
+  // Update avatar when user data changes (e.g., after login)
+  useEffect(() => {
+    const storedAvatar = localStorage.getItem("userAvatarUrl");
+    if (storedAvatar) {
+      setAvatarUrl(storedAvatar);
+    } else if (user?.avatar) {
+      setAvatarUrl(user.avatar);
+      localStorage.setItem("userAvatarUrl", user.avatar);
+    }
+  }, [user]);
 
   const handleProfilePictureChange = async (e) => {
     const file = e.target.files[0];

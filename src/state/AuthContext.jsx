@@ -54,6 +54,11 @@ export function AuthProvider({ children }) {
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
       
+      // Save avatar URL separately for Dashboard
+      if (response.user.avatar) {
+        localStorage.setItem("userAvatarUrl", response.user.avatar);
+      }
+      
       return response;
     } catch (err) {
       const errorMsg = "Invalid email or password";
