@@ -39,6 +39,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem("accessToken", response.accessToken);
         localStorage.setItem("idToken", response.idToken);
         localStorage.setItem("refreshToken", response.refreshToken);
+        localStorage.setItem("userId", email);
       }
 
       // Set user data
@@ -68,9 +69,11 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("userId");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("idToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userAvatarUrl");
     setError(null);
   };
 

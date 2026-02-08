@@ -46,7 +46,7 @@ export default function Dashboard() {
         const base64Data = reader.result; // This is the data URL (with prefix)
         
         // Get userId and token from localStorage
-        const userId = user?.id || localStorage.getItem("userId");
+        const userId = user?.userId || user?.email || localStorage.getItem("userId");
         const token = localStorage.getItem("accessToken");
 
         if (!userId || !token) {
