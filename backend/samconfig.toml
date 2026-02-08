@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+parameters_overrides = "Parameter1=Value1 Parameter2=Value2"
+stack_name = "learnedge-backend"
+s3_prefix = "sam-deploy"
+region = "ap-south-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = false

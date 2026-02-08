@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./state/AuthContext.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
@@ -15,6 +16,13 @@ import Payment from "./pages/Payment.jsx";
 import CourseDetails from "./pages/CourseDetails.jsx";
 
 export default function App() {
+  const { initializeAuth } = useAuth();
+
+  // Initialize auth on app load (load user from localStorage if logged in)
+  useEffect(() => {
+    initializeAuth();
+  }, []);
+
   return (
     <>
       <Navbar />

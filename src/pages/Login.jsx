@@ -4,8 +4,9 @@ import { useAuth } from "../state/AuthContext.jsx";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, loading, error, isAuthenticated } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
+  const [localError, setLocalError] = useState("");
 
   if (isAuthenticated) {
     navigate("/dashboard", { replace: true });
@@ -15,36 +16,28 @@ export default function Login() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setLocalError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check if credentials match registered user
-    const registeredEmail = localStorage.getItem("registeredEmail");
-    const registeredPassword = localStorage.getItem("registeredPassword");
-    const registeredName = localStorage.getItem("registeredName");
-    const registeredMobile = localStorage.getItem("registeredMobile");
-    
-    if (registeredEmail && registeredPassword) {
-      if (form.email === registeredEmail && form.password === registeredPassword) {
-        login({ 
-          email: form.email, 
-          fullName: registeredName || form.email.split("@")[0],
-          mobile: registeredMobile || ""
-        });
-        navigate("/dashboard");
-      } else {
-        alert("Invalid email or password. Please try again.");
-      }
-    } else {
-      // For demo: allow login if no registered user exists
-      login({ 
-        email: form.email, 
-        fullName: form.email.split("@")[0],
-        mobile: ""
-      });
+    setLocalError("");
+
+    // Validation
+    if (!form.email || !form.password) {
+      setLocalError("Email and password are required");
+      return;
+    }
+
+    try {
+      // Call backend login API
+      await login(form.email, form.password);
+      
+      // Successfully logged in, redirect to dashboard
       navigate("/dashboard");
+    } catch (err) {
+      setLocalError(err.message || "Login failed. Please try again.");
+      console.error("Login error:", err);
     }
   };
 
@@ -54,6 +47,9 @@ export default function Login() {
         <div className="auth-box">
           <h1>Welcome Back</h1>
           <p className="auth-subtitle">Login to continue your learning journey</p>
+
+          {error && <div style={{ color: "red", marginBottom: "15px" }}>{error}</div>}
+          {localError && <div style={{ color: "red", marginBottom: "15px" }}>{localError}</div>}
 
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-group">
@@ -65,6 +61,7 @@ export default function Login() {
                 required
                 value={form.email}
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
@@ -77,11 +74,12 @@ export default function Login() {
                 required
                 value={form.password}
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
-            <button type="submit" className="btn-submit">
-              Login
+            <button type="submit" className="btn-submit" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
 

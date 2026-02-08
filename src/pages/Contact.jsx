@@ -1,17 +1,47 @@
 import React, { useState } from "react";
+import { submitContactAPI } from "../services/api.js";
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Thank you! We will contact you soon.");
-    setForm({ name: "", email: "", message: "" });
+    setLoading(true);
+    setError("");
+    setSuccess(false);
+
+    // Validation
+    if (!form.name || !form.email || !form.message) {
+      setError("All fields are required");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Call backend contact API
+      await submitContactAPI(form.name, form.email, form.message);
+      
+      // Success
+      setSuccess(true);
+      setForm({ name: "", email: "", message: "" });
+      
+      // Hide success message after 5 seconds
+      setTimeout(() => setSuccess(false), 5000);
+    } catch (err) {
+      setError(err.message || "Failed to send message. Please try again.");
+      console.error("Contact submit error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,6 +92,19 @@ export default function Contact() {
 
             <div className="contact-form-container">
               <h2>Send Us a Message</h2>
+              
+              {success && (
+                <div style={{ color: "green", marginBottom: "20px", padding: "10px", backgroundColor: "#e8f5e9", borderRadius: "4px" }}>
+                  ✓ Thank you! Your message has been sent successfully.
+                </div>
+              )}
+              
+              {error && (
+                <div style={{ color: "red", marginBottom: "20px", padding: "10px", backgroundColor: "#ffebee", borderRadius: "4px" }}>
+                  ✗ {error}
+                </div>
+              )}
+              
               <form className="contact-form" onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label htmlFor="name">Full Name</label>
@@ -72,6 +115,7 @@ export default function Contact() {
                     required
                     value={form.name}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                 </div>
 
@@ -84,6 +128,7 @@ export default function Contact() {
                     required
                     value={form.email}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                 </div>
 
@@ -96,11 +141,12 @@ export default function Contact() {
                     required
                     value={form.message}
                     onChange={handleChange}
+                    disabled={loading}
                   ></textarea>
                 </div>
 
-                <button type="submit" className="btn-submit">
-                  Send Message
+                <button type="submit" className="btn-submit" disabled={loading}>
+                  {loading ? "Sending..." : "Send Message"}
                 </button>
               </form>
             </div>

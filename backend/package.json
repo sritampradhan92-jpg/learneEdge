@@ -1,0 +1,20 @@
+{
+  "name": "learnedge-backend",
+  "version": "1.0.0",
+  "description": "LearnEdge serverless backend with AWS Lambda",
+  "main": "index.js",
+  "scripts": {
+    "build": "sam build",
+    "deploy": "sam deploy --guided",
+    "local": "sam local start-api"
+  },
+  "keywords": ["lambda", "dynamodb", "s3", "cognito"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.400.0",
+    "@aws-sdk/client-s3": "^3.400.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.400.0",
+    "@aws-sdk/util-dynamodb": "^3.400.0"
+  }
+}

@@ -5,9 +5,10 @@ import SuccessModal from "../components/SuccessModal.jsx";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const [form, setForm] = useState({ fullname: "", mobile: "", email: "", password: "" });
+  const { signup, loading, error, isAuthenticated } = useAuth();
+  const [form, setForm] = useState({ fullName: "", mobile: "", email: "", password: "" });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [localError, setLocalError] = useState("");
 
   if (isAuthenticated) {
     navigate("/dashboard", { replace: true });
@@ -17,16 +18,34 @@ export default function Signup() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setLocalError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Store credentials for demo purposes (in real app, this would be an API call)
-    localStorage.setItem("registeredEmail", form.email);
-    localStorage.setItem("registeredPassword", form.password);
-    localStorage.setItem("registeredName", form.fullname);
-    localStorage.setItem("registeredMobile", form.mobile);
-    setShowSuccess(true);
+    setLocalError("");
+
+    // Validation
+    if (!form.fullName || !form.mobile || !form.email || !form.password) {
+      setLocalError("All fields are required");
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setLocalError("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      // Call backend signup API
+      await signup(form.email, form.password, form.fullName, form.mobile);
+      
+      // Success - show modal
+      setShowSuccess(true);
+    } catch (err) {
+      setLocalError(err.message || "Signup failed. Please try again.");
+      console.error("Signup error:", err);
+    }
   };
 
   const handleCloseModal = () => {
@@ -43,16 +62,20 @@ export default function Signup() {
             Join LearnEdge and start your learning journey today
           </p>
 
+          {error && <div style={{ color: "red", marginBottom: "15px" }}>{error}</div>}
+          {localError && <div style={{ color: "red", marginBottom: "15px" }}>{localError}</div>}
+
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="fullname">Full Name</label>
+              <label htmlFor="fullName">Full Name</label>
               <input
                 type="text"
-                id="fullname"
-                name="fullname"
+                id="fullName"
+                name="fullName"
                 required
-                value={form.fullname}
+                value={form.fullName}
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
@@ -65,8 +88,8 @@ export default function Signup() {
                 required
                 value={form.mobile}
                 onChange={handleChange}
-                pattern="[0-9]{10}"
-                
+                placeholder="+919876543210"
+                disabled={loading}
               />
             </div>
 
@@ -79,6 +102,7 @@ export default function Signup() {
                 required
                 value={form.email}
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
@@ -91,11 +115,12 @@ export default function Signup() {
                 required
                 value={form.password}
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
-            <button type="submit" className="btn-submit">
-              Sign Up
+            <button type="submit" className="btn-submit" disabled={loading}>
+              {loading ? "Creating Account..." : "Sign Up"}
             </button>
           </form>
 
@@ -107,7 +132,7 @@ export default function Signup() {
 
       <SuccessModal
         open={showSuccess}
-        message="You have successfully created your account"
+        message="You have successfully created your account. Please login to continue."
         onClose={handleCloseModal}
         buttonText="Go to Login"
       />

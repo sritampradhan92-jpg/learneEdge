@@ -1,0 +1,200 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: LearnEdge Serverless Backend Infrastructure
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: nodejs18.x
+    Environment:
+      Variables:
+        COGNITO_USER_POOL_ID: 'ap-south-1_bJbzPkH04'
+        COGNITO_CLIENT_ID: '47fm2r0e8ef2rshne11qr7fr8'
+        DYNAMODB_USER_TABLE: 'learnedge-user-profiles'
+        DYNAMODB_COURSES_TABLE: 'learnedge-courses'
+        DYNAMODB_ENROLLMENTS_TABLE: 'learnedge-enrollments'
+        DYNAMODB_CONTACTS_TABLE: 'learnedge-contacts'
+        S3_BUCKET: 'learnedge-files-776312084756'
+
+Resources:
+  # API Gateway
+  LearnEdgeApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET, POST, PUT, DELETE, OPTIONS'"
+        AllowHeaders: "'Content-Type, Authorization'"
+        AllowOrigin: "'*'"
+
+  # Lambda Execution Role
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/learnedge-*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::learnedge-files-${AWS::AccountId}/*'
+        - PolicyName: CognitoAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:ListUsers
+                Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+
+  # Signup Function
+  SignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: learnedge-signup
+      CodeUri: src/lambda/auth/signup
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        SignupAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LearnEdgeApi
+            Path: /auth/signup
+            Method: post
+
+  # Login Function
+  LoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: learnedge-login
+      CodeUri: src/lambda/auth/login
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        LoginAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LearnEdgeApi
+            Path: /auth/login
+            Method: post
+
+  # Get Courses Function
+  GetCoursesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: learnedge-get-courses
+      CodeUri: src/lambda/courses/get
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        GetCoursesAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LearnEdgeApi
+            Path: /courses
+            Method: get
+
+  # Enroll Course Function
+  EnrollCourseFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: learnedge-enroll-course
+      CodeUri: src/lambda/courses/enroll
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        EnrollAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LearnEdgeApi
+            Path: /courses/enroll
+            Method: post
+
+  # Contact Form Function
+  ContactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: learnedge-contact
+      CodeUri: src/lambda/contact
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        ContactAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LearnEdgeApi
+            Path: /contact
+            Method: post
+
+  # Upload Avatar Function
+  UploadAvatarFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: learnedge-upload-avatar
+      CodeUri: src/lambda/files/upload-avatar
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        UploadAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LearnEdgeApi
+            Path: /files/upload-avatar
+            Method: post
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${LearnEdgeApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  
+  SignupFunctionArn:
+    Description: Signup Lambda Function ARN
+    Value: !GetAtt SignupFunction.Arn
+  
+  LoginFunctionArn:
+    Description: Login Lambda Function ARN
+    Value: !GetAtt LoginFunction.Arn
+  
+  GetCoursesFunctionArn:
+    Description: Get Courses Lambda Function ARN
+    Value: !GetAtt GetCoursesFunction.Arn
+  
+  EnrollCourseFunctionArn:
+    Description: Enroll Course Lambda Function ARN
+    Value: !GetAtt EnrollCourseFunction.Arn
+  
+  ContactFunctionArn:
+    Description: Contact Lambda Function ARN
+    Value: !GetAtt ContactFunction.Arn
+  
+  UploadAvatarFunctionArn:
+    Description: Upload Avatar Lambda Function ARN
+    Value: !GetAtt UploadAvatarFunction.Arn
