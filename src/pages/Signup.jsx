@@ -141,7 +141,7 @@ export default function Signup() {
                   required
                   value={form.mobile}
                   onChange={handleChange}
-                  placeholder="+919876543210"
+                 
                   disabled={loading}
                 />
               </div>
