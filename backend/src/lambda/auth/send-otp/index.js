@@ -52,12 +52,20 @@ exports.handler = async (event) => {
 
         // Try to sign up user with Cognito (this sends verification code automatically)
         try {
+            // Format phone number to E.164 format if not already
+            let formattedPhone = mobile;
+            if (!mobile.startsWith('+')) {
+                formattedPhone = '+91' + mobile.replace(/^0+/, ''); // Default to India
+            }
+
             const signUpCommand = new SignUpCommand({
                 ClientId: process.env.COGNITO_CLIENT_ID,
                 Username: email,
                 Password: password,
                 UserAttributes: [
-                    { Name: 'email', Value: email }
+                    { Name: 'email', Value: email },
+                    { Name: 'name', Value: fullName },
+                    { Name: 'phone_number', Value: formattedPhone }
                 ]
             });
 
