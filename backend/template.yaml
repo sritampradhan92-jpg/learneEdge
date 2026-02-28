@@ -17,7 +17,6 @@ Globals:
         DYNAMODB_CONTACTS_TABLE: 'learnedge-contacts'
         DYNAMODB_OTP_TABLE: 'learnedge-otp'
         S3_BUCKET: 'learnedge-files-776312084756'
-        SES_FROM_EMAIL: 'rightworld613@gmail.com'
 
 Resources:
   # API Gateway
@@ -77,15 +76,6 @@ Resources:
                   - cognito-idp:AdminSetUserPassword
                   - cognito-idp:ListUsers
                 Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
-        - PolicyName: SESAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ses:SendEmail
-                  - ses:SendRawEmail
-                Resource: '*'
         - PolicyName: DynamoDBDeleteAccess
           PolicyDocument:
             Version: '2012-10-17'
