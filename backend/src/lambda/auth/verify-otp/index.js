@@ -1,5 +1,5 @@
 const { DynamoDBClient, GetItemCommand, DeleteItemCommand, PutItemCommand } = require('@aws-sdk/client-dynamodb');
-const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { CognitoIdentityProviderClient, ConfirmSignUpCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 
 const dynamoClient = new DynamoDBClient({ region: 'ap-south-1' });
@@ -24,94 +24,75 @@ exports.handler = async (event) => {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ error: 'Email and OTP are required' })
+                body: JSON.stringify({ error: 'Email and verification code are required' })
             };
         }
 
-        // Get OTP data from DynamoDB
+        // Get user data from DynamoDB
         const getCommand = new GetItemCommand({
             TableName: process.env.DYNAMODB_OTP_TABLE,
             Key: marshall({ email: email })
         });
 
-        const otpResponse = await dynamoClient.send(getCommand);
+        const userData = await dynamoClient.send(getCommand);
 
-        if (!otpResponse.Item) {
-            return {
-                statusCode: 401,
-                headers,
-                body: JSON.stringify({ error: 'OTP not found. Please request a new OTP.' })
-            };
-        }
-
-        const otpData = unmarshall(otpResponse.Item);
-
-        // Check if OTP expired
-        if (new Date() > new Date(otpData.expiresAt)) {
-            // Delete expired OTP
-            await dynamoClient.send(new DeleteItemCommand({
-                TableName: process.env.DYNAMODB_OTP_TABLE,
-                Key: marshall({ email: email })
-            }));
-
-            return {
-                statusCode: 401,
-                headers,
-                body: JSON.stringify({ error: 'OTP has expired. Please request a new OTP.' })
-            };
-        }
-
-        // Check if OTP matches
-        if (otpData.otp !== otp) {
-            return {
-                statusCode: 401,
-                headers,
-                body: JSON.stringify({ error: 'Invalid OTP. Please check and try again.' })
-            };
-        }
-
-        // OTP is valid! Now create user in Cognito
-        const { fullName, mobile, password } = otpData;
-
-        if (!fullName || !mobile || !password) {
+        if (!userData.Item) {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ error: 'Missing user details. Please signup again.' })
+                body: JSON.stringify({ error: 'User data not found. Please signup again.' })
             };
         }
 
-        // Step 1: Create user in Cognito
-        const createUserCommand = new AdminCreateUserCommand({
-            UserPoolId: process.env.COGNITO_USER_POOL_ID,
-            Username: email,
-            TemporaryPassword: password,
-            MessageAction: 'SUPPRESS',
-            UserAttributes: [
-                { Name: 'email', Value: email },
-                { Name: 'email_verified', Value: 'true' }
-            ]
-        });
+        const userInfo = unmarshall(userData.Item);
 
-        const cognitoUser = await cognitoClient.send(createUserCommand);
-        const userId = cognitoUser.User.Username;
+        // Confirm signup with Cognito using the verification code
+        try {
+            const confirmCommand = new ConfirmSignUpCommand({
+                ClientId: process.env.COGNITO_CLIENT_ID,
+                Username: email,
+                ConfirmationCode: otp
+            });
 
-        // Step 2: Set permanent password
-        const setPasswordCommand = new AdminSetUserPasswordCommand({
-            UserPoolId: process.env.COGNITO_USER_POOL_ID,
-            Username: email,
-            Password: password,
-            Permanent: true
-        });
+            await cognitoClient.send(confirmCommand);
+            console.log('User confirmed successfully:', email);
 
-        await cognitoClient.send(setPasswordCommand);
+        } catch (cognitoError) {
+            console.error('Cognito confirm error:', cognitoError);
 
-        // Step 3: Save user profile to DynamoDB
+            if (cognitoError.name === 'CodeMismatchException') {
+                return {
+                    statusCode: 401,
+                    headers,
+                    body: JSON.stringify({ error: 'Invalid verification code. Please check and try again.' })
+                };
+            }
+
+            if (cognitoError.name === 'ExpiredCodeException') {
+                return {
+                    statusCode: 401,
+                    headers,
+                    body: JSON.stringify({ error: 'Verification code has expired. Please request a new one.' })
+                };
+            }
+
+            if (cognitoError.name === 'NotAuthorizedException') {
+                return {
+                    statusCode: 409,
+                    headers,
+                    body: JSON.stringify({ error: 'Account already verified. Please login instead.' })
+                };
+            }
+
+            throw cognitoError;
+        }
+
+        // Save user profile to DynamoDB
         const userProfile = {
             userId: email,
-            fullName: fullName,
+            fullName: userInfo.fullName || '',
             email: email,
-            mobile: mobile,
+            mobile: userInfo.mobile || '',
             avatar: null,
             bio: '',
             emailVerified: true,
@@ -119,14 +100,12 @@ exports.handler = async (event) => {
             updatedAt: new Date().toISOString()
         };
 
-        const putUserCommand = new PutItemCommand({
+        await dynamoClient.send(new PutItemCommand({
             TableName: process.env.DYNAMODB_USER_TABLE,
             Item: marshall(userProfile)
-        });
+        }));
 
-        await dynamoClient.send(putUserCommand);
-
-        // Step 4: Delete used OTP
+        // Delete temporary user data
         await dynamoClient.send(new DeleteItemCommand({
             TableName: process.env.DYNAMODB_OTP_TABLE,
             Key: marshall({ email: email })
@@ -137,27 +116,18 @@ exports.handler = async (event) => {
             headers,
             body: JSON.stringify({
                 message: 'Account created successfully! You can now login.',
-                userId: userId,
                 email: email,
-                fullName: fullName
+                fullName: userInfo.fullName
             })
         };
+
     } catch (error) {
         console.error('Verify OTP error:', error);
-
-        // Handle Cognito user already exists error
-        if (error.name === 'UsernameExistsException') {
-            return {
-                statusCode: 409,
-                headers,
-                body: JSON.stringify({ error: 'An account with this email already exists. Please login instead.' })
-            };
-        }
 
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ error: error.message })
+            body: JSON.stringify({ error: error.message || 'Verification failed' })
         };
     }
 };
