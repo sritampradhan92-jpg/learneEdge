@@ -21,6 +21,24 @@ export const signupAPI = async (email, password, fullName, mobile) => {
   }).then(handleResponse);
 };
 
+// Send OTP for email verification
+export const sendOTPAPI = async (email, password, fullName, mobile) => {
+  return fetch(`${API_URL}/auth/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, fullName, mobile })
+  }).then(handleResponse);
+};
+
+// Verify OTP and create account
+export const verifyOTPAPI = async (email, otp) => {
+  return fetch(`${API_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otp })
+  }).then(handleResponse);
+};
+
 export const loginAPI = async (email, password) => {
   return fetch(`${API_URL}/auth/login`, {
     method: 'POST',
