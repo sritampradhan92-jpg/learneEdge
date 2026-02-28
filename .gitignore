@@ -4,4 +4,5 @@
 dist/
 .aws-sam/
 *.log
+*.zip
 .DS_Store
