@@ -47,6 +47,24 @@ export const loginAPI = async (email, password) => {
   }).then(handleResponse);
 };
 
+// Forgot Password - Send reset code
+export const forgotPasswordAPI = async (email) => {
+  return fetch(`${API_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  }).then(handleResponse);
+};
+
+// Reset Password - Verify code and set new password
+export const resetPasswordAPI = async (email, code, newPassword) => {
+  return fetch(`${API_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, newPassword })
+  }).then(handleResponse);
+};
+
 // ========== COURSE APIs ==========
 
 export const getCoursesAPI = async () => {
