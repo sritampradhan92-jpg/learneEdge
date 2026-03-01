@@ -54,6 +54,7 @@ Resources:
                   - dynamodb:UpdateItem
                   - dynamodb:Query
                   - dynamodb:Scan
+                  - dynamodb:DeleteItem
                 Resource:
                   - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/learnedge-*'
         - PolicyName: S3Access
@@ -71,20 +72,18 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - cognito-idp:AdminGetUser
+                  - cognito-idp:SignUp
                   - cognito-idp:AdminCreateUser
                   - cognito-idp:AdminSetUserPassword
+                  - cognito-idp:AdminConfirmSignUp
+                  - cognito-idp:AdminInitiateAuth
+                  - cognito-idp:InitiateAuth
+                  - cognito-idp:AdminGetUser
                   - cognito-idp:ListUsers
+                  - cognito-idp:AdminUserGlobalSignOut
+                  - cognito-idp:ForgotPassword
+                  - cognito-idp:ConfirmForgotPassword
                 Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
-        - PolicyName: DynamoDBDeleteAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:DeleteItem
-                Resource:
-                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/learnedge-*'
 
   # Send OTP Function
   SendOTPFunction:
