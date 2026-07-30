@@ -1,0 +1,49 @@
+{
+  "D:\\LearnEdge\\backend\\samconfig.toml": {
+    "versionFramework": "4.33.0",
+    "servicePath": "D:\\LearnEdge\\backend\\samconfig.toml",
+    "serviceConfigFileName": "samconfig.toml",
+    "service": {
+      "version": 0.1,
+      "default": {
+        "deploy": {
+          "parameters_overrides": "Parameter1=Value1 Parameter2=Value2",
+          "stack_name": "learnedge-backend",
+          "s3_prefix": "sam-deploy",
+          "region": "ap-south-1",
+          "confirm_changeset": true,
+          "capabilities": "CAPABILITY_IAM",
+          "disable_rollback": false
+        }
+      }
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "error": {
+      "message": "Please specify a stack name using the --stack option, or persist it in the samconfig.toml file.",
+      "stack": "Error: Please specify a stack name using the --stack option, or persist it in the samconfig.toml file.\n    at getCfnConfig (file:///C:/Users/srita/.serverless/releases/4.33.0/package/dist/sf-core.js:1453:20726)\n    at info_default (file:///C:/Users/srita/.serverless/releases/4.33.0/package/dist/sf-core.js:1453:31974)\n    at CfnRunner.run (file:///C:/Users/srita/.serverless/releases/4.33.0/package/dist/sf-core.js:1456:3759)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async route (file:///C:/Users/srita/.serverless/releases/4.33.0/package/dist/sf-core.js:2519:2848)\n    at async Object.run (file:///C:/Users/srita/.serverless/releases/4.33.0/package/dist/sf-core.js:2520:3886)\n    at async run2 (file:///C:/Users/srita/.serverless/releases/4.33.0/package/dist/sf-core.js:2520:5040)",
+      "code": "MISSING_STACK_NAME"
+    },
+    "serviceRawFile": "version = 0.1\r\n[default]\r\n[default.deploy]\r\nparameters_overrides = \"Parameter1=Value1 Parameter2=Value2\"\r\nstack_name = \"learnedge-backend\"\r\ns3_prefix = \"sam-deploy\"\r\nregion = \"ap-south-1\"\r\nconfirm_changeset = true\r\ncapabilities = \"CAPABILITY_IAM\"\r\ndisable_rollback = false\r\n",
+    "command": [
+      "info"
+    ],
+    "options": {},
+    "orgId": "fe648ddb-fbc0-4a04-b4f4-0c88f8ce6333",
+    "orgName": "right29",
+    "userId": "1KWskjmqB6fr408Xd8",
+    "userName": "right29",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}

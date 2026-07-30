@@ -4,9 +4,10 @@
   "description": "LearnEdge serverless backend with AWS Lambda",
   "main": "index.js",
   "scripts": {
+    "dev": "node src/local-dev-server.js",
     "build": "sam build",
     "deploy": "sam deploy --guided",
-    "local": "sam local start-api"
+    "local": "node src/local-dev-server.js"
   },
   "keywords": ["lambda", "dynamodb", "s3", "cognito"],
   "author": "",
